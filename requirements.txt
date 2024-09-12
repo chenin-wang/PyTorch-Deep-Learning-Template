@@ -1,0 +1,16 @@
+numpy
+torch
+torchaudio
+torchvision
+matplotlib
+transformers
+peft
+acclerate
+debugpy
+deepspeed
+hydra-core
+omegaconf
+timm
+wandb
+tensorboard
+torchmetrics
