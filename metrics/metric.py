@@ -1,5 +1,5 @@
 from ..loggers.logging_colors import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 # define a custom metric as a function
 def my_metric(y_true, y_pred):

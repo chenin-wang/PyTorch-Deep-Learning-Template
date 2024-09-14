@@ -30,7 +30,7 @@ if is_flash_attn_2_available():
     from transformers.modeling_flash_attention_utils import _flash_attention_forward
 
 from ...loggers.logging_colors import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 # General docstring
 _CONFIG_FOR_DOC = "hfmodelConfig"

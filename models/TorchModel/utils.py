@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from ...loggers.logging_colors import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 def window_partition(x, window_size):
     """

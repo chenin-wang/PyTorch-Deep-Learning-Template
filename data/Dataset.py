@@ -8,7 +8,7 @@ from datasets import (
 )
 from .transformations.transforms import train_transforms
 from ..loggers.logging_colors import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 class CustomTorchDataset(torch.utils.data.Dataset):
     def __init__(self, data: List[Dict], transforms=None):

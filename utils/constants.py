@@ -1,5 +1,4 @@
-
-# Model Constants
+LOGGER_PATH = "./logs.log"
 IGNORE_INDEX = -100
 IMAGE_TOKEN_INDEX = -200
 DEFAULT_IMAGE_TOKEN = "<image>"

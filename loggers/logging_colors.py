@@ -4,7 +4,7 @@ import logging.handlers
 import os
 import ctypes
 from typing import Optional
-from transformers import logging as hf_logging
+from transformers.utils import logging as hf_logging
 
 class ColoredFormatter(logging.Formatter):
     COLORS = {
@@ -22,16 +22,31 @@ class ColoredFormatter(logging.Formatter):
             return f"{self.COLORS.get(record.levelname, self.COLORS['RESET'])}{log_message}{self.COLORS['RESET']}"
         return log_message
 
-def setup_logging(default_level: int = logging.INFO, log_path: Optional[str] = None) -> None:
-    console_formatter = ColoredFormatter("%(asctime)s - %(name)20s: [%(levelname)8s] - %(message)s", 
+def get_logger(log_path: Optional[str] = None):
+    console_formatter = ColoredFormatter("%(asctime)s - %(module)s: [%(levelname)8s] - %(message)s", 
                                          datefmt='%Y-%m-%d %H:%M:%S')
-    hf_logging._default_handler.setFormatter(console_formatter)
 
+    hf_logger = hf_logging.get_logger("transformers")
+    all_handlers = hf_logger.handlers
+
+    # Print information about each handler
+    for i, handler in enumerate(all_handlers):
+        if handler and isinstance(hf_logger.handlers[i], logging.StreamHandler):
+            handler.setFormatter(console_formatter)
+        else:
+            print("Warning: No handlers found for the logger.")
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(console_formatter)
+            hf_logger.addHandler(console_handler)
+
+    # Set up file handler
     if log_path:
         file_handler = logging.handlers.RotatingFileHandler(log_path, maxBytes=(1024 ** 2 * 2), backupCount=3)
-        file_formatter = logging.Formatter("%(asctime)s - %(name)20s: [%(levelname)8s] - %(message)s")
+        file_formatter = logging.Formatter("%(asctime)s - %(module)s: [%(levelname)8s] - %(message)s")
         file_handler.setFormatter(file_formatter)
-        hf_logging.add_handler(file_handler)
+        hf_logger.addHandler(file_handler)
+
+    return hf_logger
 
 def add_coloring_to_emit_windows(fn):
     def _set_color(self, code):
@@ -69,16 +84,9 @@ if platform.system() == 'Windows':
 else:
     os.system('')  # Enable ANSI colors for Windows 10+
 
-def get_logger(name: str, log_path: Optional[str] = None) -> logging.Logger:
-    logger = logging.getLogger(name)
-    if not logger.handlers:
-        setup_logging(log_path=log_path)
-    return logger
-
-logger = get_logger(__name__)
-
 if __name__ == "__main__":
-    logger = get_logger(__name__, "test.log")
+    hf_logging.set_verbosity_info()
+    logger = get_logger()
     logger.debug("This is a debug message")
     logger.info("This is an info message")
     logger.warning("This is a warning message")

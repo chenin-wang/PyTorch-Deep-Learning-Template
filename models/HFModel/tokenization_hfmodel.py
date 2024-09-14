@@ -11,7 +11,7 @@ import regex as re
 from transformers.tokenization_utils import AddedToken, PreTrainedTokenizer, _is_control, _is_punctuation, _is_whitespace
 from ...loggers.logging_colors import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 VOCAB_FILES_NAMES = {
     "vocab_file": "vocab.json",

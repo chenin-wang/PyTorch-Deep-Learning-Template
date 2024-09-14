@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Optional, Union, Tuple, List
 import torch
 from ..loggers.logging_colors import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 try:
     import safetensors.torch

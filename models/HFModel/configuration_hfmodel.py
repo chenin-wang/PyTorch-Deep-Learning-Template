@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 from transformers.configuration_utils import PretrainedConfig
 from transformers.onnx import OnnxConfig
 from ...loggers.logging_colors import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class hfmodelTextConfig(PretrainedConfig):

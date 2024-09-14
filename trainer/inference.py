@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from ..loggers.logging_colors import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 ds = load_dataset("scene_parse_150", split="train[:50]")

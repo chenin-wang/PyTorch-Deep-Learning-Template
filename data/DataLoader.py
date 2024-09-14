@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader, random_split, DistributedSampler
 from .Dataset import CustomTorchDataset
 from ..loggers.logging_colors import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 def get_dataloaders(
         data_dir,

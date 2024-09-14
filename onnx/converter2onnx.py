@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import torch
-from ..models.modelHelper import load_checkpoint,add_state_dict,onnx_export
+from ..models.modelutils import load_checkpoint,add_state_dict,onnx_export
 import os
 import argparse
 from unet import UNet

@@ -8,7 +8,7 @@ from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 from .tokenization_hfmodel import hfmodelTokenizer
 from ...loggers.logging_colors import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "merges_file": "merges.txt", "tokenizer_file": "tokenizer.json"}
 

@@ -28,7 +28,7 @@ from transformers.image_utils import (
 from transformers.utils import TensorType, is_vision_available
 
 from ...loggers.logging_colors import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 if is_vision_available():

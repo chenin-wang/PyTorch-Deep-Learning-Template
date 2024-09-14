@@ -4,7 +4,7 @@ import torch.nn as nn
 from .utils import *
 from ...loggers.logging_colors import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class CustomTorchModel(nn.Module):

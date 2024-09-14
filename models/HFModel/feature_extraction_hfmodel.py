@@ -15,7 +15,7 @@ if is_torch_available():
     import torch
 
 from ...loggers.logging_colors import get_logger
-logger = get_logger(__name__)
+logger = get_logger()
 
 class WhisperFeatureExtractor(SequenceFeatureExtractor):
     r"""
