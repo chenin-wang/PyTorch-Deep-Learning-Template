@@ -4,8 +4,6 @@ import numpy as np
 from torchvision.utils import make_grid
 from ..loggers.logging_colors import logger
 
-
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 plt.interactive(False)
 

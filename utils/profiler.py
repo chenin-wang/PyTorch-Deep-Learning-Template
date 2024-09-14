@@ -97,13 +97,16 @@ class ModelAcceleratorProfiler:
     def export_chrome_trace(self, output_dir="trace"):
         profile_kwargs = ProfileKwargs(
             activities=["cpu", "cuda"],
-            output_trace_dir=output_dir
+            output_dir=output_dir
         )
         accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
         model = accelerator.prepare(self.model)
 
         with accelerator.profile() as prof:
             model(self.inputs)
+        
+        # Export the trace file
+        prof.export_chrome_trace(f"{output_dir}/trace.json")
 
     def analyze_long_running_jobs(self):
         def trace_handler(p):
@@ -113,7 +116,7 @@ class ModelAcceleratorProfiler:
 
         profile_kwargs = ProfileKwargs(
             activities=["cpu", "cuda"],
-            schedule_option={"wait": 5, "warmup": 1, "active": 3, "repeat": 2, "skip_first": 10},
+            schedule={"wait": 5, "warmup": 1, "active": 3, "repeat": 2, "skip_first": 10},
             on_trace_ready=trace_handler
         )
         accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
@@ -129,9 +132,10 @@ class ModelAcceleratorProfiler:
             with_flops=True
         )
         accelerator = Accelerator(kwargs_handlers=[profile_kwargs])
+        model = accelerator.prepare(self.model)
 
         with accelerator.profile() as prof:
-            self.model(self.inputs)
+            model(self.inputs)
 
         print(prof.key_averages().table(sort_by="flops", row_limit=10))
 

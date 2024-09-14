@@ -20,7 +20,7 @@ from trainer.arguments import EnhancedTrainingArguments,ModelArguments, DataArgu
 from trainer.trainer import EnhancedTrainer
 from transformers import HfArgumentParser, PreTrainedModel,PretrainedConfig,PreTrainedTokenizerBase, TrainingArguments, TrainerCallback, DataCollator, EvalPrediction
 from torch.utils.data import Dataset, IterableDataset
-from .loggers.logging_colors import get_logger
+from loggers.logging_colors import get_logger
 
 logger = get_logger(__name__)
 
@@ -49,6 +49,9 @@ def main():
     preprocess_logits_for_metrics: Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = None,
 
     parser = HfArgumentParser((ModelArguments, DataArguments, EnhancedTrainingArguments))
+    # model_args,data_args,training_args = parser.parse_json_file(json_file = "config.json")
+    # model_args,data_args,training_args = parser.parse_dict(vars(parser.parse_json_file(json_file="config.json")[0]))
+    # model_args,data_args,training_args = parser.parse_yaml_file(yaml_file="config.json")
     model_args,data_args,training_args = parser.parse_args_into_dataclasses()
 
     logger.warning(
