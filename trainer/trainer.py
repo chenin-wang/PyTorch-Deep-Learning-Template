@@ -2,7 +2,7 @@ from transformers import Trainer
 from typing import Optional
 import torch
 import os
-
+from transformers.modeling_utils import PreTrainedModel
 from ..loggers.logging_colors import get_logger
 
 logger = get_logger()
@@ -11,7 +11,7 @@ logger = get_logger()
 class EnhancedTrainer(Trainer):
     def compute_loss(
         self,
-        model: NewModel,
+        model: PreTrainedModel,
         inputs,
         **kwargs,
     ):

@@ -13,6 +13,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+data/
+*.ipynb
 develop-eggs/
 dist/
 downloads/

@@ -104,6 +104,7 @@ This will load the pre-trained model and evaluate its performance on the test se
 ## Architecture
 
 ```bash
+# tree /f windows
 .
 │  .gitignore
 │  main.py # main script to run the project

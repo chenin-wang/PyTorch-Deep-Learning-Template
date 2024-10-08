@@ -1,0 +1,2 @@
+{"input_image": "dataset/hf_dataset_sample/images/input_image1.png", "description": "This is a description for image 1", "output_image": "dataset/hf_dataset_sample/images/output_image1.png", "label": "0"}
+{"input_image": "dataset/hf_dataset_sample/images/input_image2.png", "description": "This is a description for image 2", "output_image": "dataset/hf_dataset_sample/images/output_image2.png", "label": "1"}

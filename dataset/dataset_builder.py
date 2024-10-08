@@ -1,14 +1,32 @@
+"""
+loading other dataset modalities, take a look at the load audio dataset guide, 
+the load image dataset guide, or the load text dataset guide.
+https://huggingface.co/docs/datasets/loading
+
+"""
 
 import torch
+import os
+import json
 from typing import Dict, List, Optional, Union
 import datasets
 from datasets import (
-    load_dataset, DatasetDict, Image, Features,
-    load_dataset_builder, get_dataset_split_names, IterableDatasetDict, IterableDataset
+    load_dataset,
+    DatasetDict,
+    Image,
+    Features,
+    load_from_disk,
+    load_dataset_builder,
+    get_dataset_split_names,
+    IterableDatasetDict,
+    IterableDataset,
 )
+from dataclasses import dataclass, field
 from .transformations.transforms import train_transforms
 from ..loggers.logging_colors import get_logger
+
 logger = get_logger()
+
 
 class CustomTorchDataset(torch.utils.data.Dataset):
     def __init__(self, data: List[Dict], transforms=None):
@@ -25,7 +43,8 @@ class CustomTorchDataset(torch.utils.data.Dataset):
             item = self.transforms(item)
         return item
 
-class CustomHuggingFaceDataset:
+
+class CustomHuggingFaceDataset(datasets.DatasetBuilder):
     def __init__(self, path: str = "rotten_tomatoes", transforms=None):
         self.path = path
         self.dataset_builder = load_dataset_builder(self.path)
@@ -39,31 +58,56 @@ class CustomHuggingFaceDataset:
         logger.info(f"Features: {self.dataset_builder.info.features}")
         logger.info(f"Splits: {get_dataset_split_names(self.path)}")
 
-    def load(self, split: str = "train", batched: bool = False) -> Union[DatasetDict, datasets.Dataset, IterableDatasetDict, IterableDataset]:
+    def load(
+        self, split: str = "train", batched: bool = False
+    ) -> Union[DatasetDict, datasets.Dataset, IterableDatasetDict, IterableDataset]:
         """Load a specific split of the dataset."""
-        dataset = load_dataset(self.path, trust_remote_code=True)
+        dataset = load_dataset(self.path, trust_remote_code=True, num_proc=8)
+        # 加载自定义数据集
+        dataset = load_dataset(
+            "dataset/hf_dataset_sample/custom_hf_dataset.py",
+            split="train",
+            trust_remote_code=True,
+            num_proc=8,
+        )
+
+        # 打印数据集基本信息
+        print(dataset.info)
+
         logger.info(f"Loaded {split} split with {len(dataset[split])} samples")
         if self.transforms:
-            dataset[split] = dataset[split].map(self.transforms, num_proc=4, batched=batched)
+            dataset[split] = dataset[split].map(
+                self.transforms, num_proc=4, batched=batched
+            )
         return dataset[split]
 
     @staticmethod
-    def create_dataset(image_paths: List[str], label_paths: List[str], transforms=None, batched: bool = False) -> datasets.Dataset:
-        """Create a dataset from image and label paths."""
-        dataset = datasets.Dataset.from_dict({
-            "image": sorted(image_paths),
-            "label": sorted(label_paths)
-        })
+    def create_dataset(
+        image_paths: List[str],
+        label_paths: List[str],
+        transforms=None,
+        batched: bool = False,
+    ) -> datasets.Dataset:
+        """
+        Create a dataset from image and label paths.
+        other type ref https://huggingface.co/docs/datasets/image_dataset
+        """
+        dataset = datasets.Dataset.from_dict(
+            {"image": sorted(image_paths), "label": sorted(label_paths)}
+        )
         dataset = dataset.cast_column("image", Image()).cast_column("label", Image())
         logger.info(f"Created image dataset with {len(dataset)} samples")
         if transforms:
             dataset = dataset.map(transforms, num_proc=4, batched=batched)
         return dataset
 
+
 if __name__ == "__main__":
     # Example usage for CustomTorchDataset
-    data = [{"image": "path/to/image1.jpg", "label": 0}, 
-            {"image": "path/to/image2.jpg", "label": 1}]
+    data = [
+        {"image": "path/to/image1.jpg", "label": 0},
+        {"image": "path/to/image2.jpg", "label": 1},
+    ]
     torch_dataset = CustomTorchDataset(data, transforms=train_transforms)
     logger.info(f"CustomTorchDataset sample: {torch_dataset[0]}")
 
@@ -77,7 +121,7 @@ if __name__ == "__main__":
     image_dataset = CustomHuggingFaceDataset.create_dataset(
         image_paths=["path/to/train_image_1.jpg", "path/to/train_image_2.jpg"],
         label_paths=["path/to/train_label_1.png", "path/to/train_label_2.png"],
-        transforms=train_transforms
+        transforms=train_transforms,
     )
     logger.info(f"Image dataset sample: {image_dataset[0]}")
 

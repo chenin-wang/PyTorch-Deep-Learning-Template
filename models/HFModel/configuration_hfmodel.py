@@ -361,7 +361,7 @@ class hfmodelConfig(PretrainedConfig):
                     logger.info(message)
 
             # Update all values in `vision_config` with the ones in `_vision_config_dict`.
-            vision_config.update(_vision_config_dict)
+            vision_config.update(_vision_config_dict)    
 
         if text_config is None:
             text_config = {}

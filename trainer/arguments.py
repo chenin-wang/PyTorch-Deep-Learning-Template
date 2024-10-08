@@ -41,13 +41,8 @@ class EnhancedTrainingArguments(TrainingArguments):
         default="output",
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
     )
-    output_dir: str = field(
-        default="output",
-        metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
-    )
     temperature: float = field(
         default=0.05,
-        metadata={"help": "Temperature parameter for controlling randomness in sampling."}
         metadata={"help": "Temperature parameter for controlling randomness in sampling."}
     )
     use_fp16: bool = field(
@@ -59,7 +54,6 @@ class EnhancedTrainingArguments(TrainingArguments):
     lr_scheduler_kwargs: Optional[Dict[str, Union[str, float, int]]] = field(
         default=None,
         metadata={"help": "Additional arguments for the learning rate scheduler."}
-        metadata={"help": "Whether to use mixed precision training."}
     )
 
     # Override the lr_scheduler_kwargs field
@@ -69,7 +63,6 @@ class EnhancedTrainingArguments(TrainingArguments):
     )
 
     def __post_init__(self):
-        super().__post_init__()
         super().__post_init__()
         if self.use_fp16:
             self.fp16 = True
@@ -88,46 +81,26 @@ class EnhancedTrainingArguments(TrainingArguments):
         self.log_level = logging.INFO
         self.log_level_replica = logging.WARNING
 
-    def to_yaml(self, file_path: str):
-        """Save the configuration to a YAML file."""
-        config_dict = self.to_dict()
-        
-        with open(file_path, 'w') as f:
-            yaml.dump(config_dict, f, default_flow_style=False)
-        
-        logger.info(f"Configuration saved to {file_path}")
-
-
 @dataclass
-class ModelDataArguments(ConfigurableBase):
 class ModelDataArguments(ConfigurableBase):
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
-        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
     data_dir: str = field(metadata={"help": "Directory containing the dataset files"})
-    cache_dir: Optional[str] = field(
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Directory to store the preprocessed datasets"}
     )
     overwrite_cache: bool = field(
         default=False,
         metadata={"help": "Overwrite the cached preprocessed datasets or not"}
-        metadata={"help": "Overwrite the cached preprocessed datasets or not"}
     )
 
-
 @dataclass
-class ModelArguments(ConfigurableBase):
-    model_name_or_path: str = field(default="facebook/opt-125m")
 class ModelArguments(ConfigurableBase):
     model_name_or_path: str = field(default="facebook/opt-125m")
     model_class_name: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Used to init model class, format is XXXXForCausalLM. "
-                    "e.g. currently XXXX is chosen from LlavaLlama, LlavaMixtral, LlavaMistral, Llama"
-        }
             "help": "Used to init model class, format is XXXXForCausalLM. "
                     "e.g. currently XXXX is chosen from LlavaLlama, LlavaMixtral, LlavaMistral, Llama"
         }
@@ -137,21 +110,16 @@ class ModelArguments(ConfigurableBase):
         metadata={
             "help": 'Could be "mm_mlp_adapter", "mm_vision_resampler", "mm_vision_tower,mm_mlp_adapter,mm_language_model"'
         }
-        }
     )
-    version: str = field(default="v0")
     version: str = field(default="v0")
     freeze_backbone: bool = field(default=False)
     tune_mm_mlp_adapter: bool = field(default=False)
     tune_mm_vision_resampler: bool = field(default=False)
     vision_tower: Optional[str] = field(default=None)
     vision_tower_pretrained: Optional[str] = field(default=None)
-    vision_tower_pretrained: Optional[str] = field(default=None)
 
 
 @dataclass
-class DataArguments(ConfigurableBase):
-    data_path: Optional[str] = field(
 class DataArguments(ConfigurableBase):
     data_path: Optional[str] = field(
         default=None,
@@ -159,19 +127,10 @@ class DataArguments(ConfigurableBase):
             "help": "Path to the training data, in llava's instruction.json format. "
                     "Supporting multiple json files via /path/to/{a,b,c}.json"
         }
-            "help": "Path to the training data, in llava's instruction.json format. "
-                    "Supporting multiple json files via /path/to/{a,b,c}.json"
-        }
     )
     lazy_preprocess: bool = field(default=False)
     is_multimodal: bool = field(default=False)
-    lazy_preprocess: bool = field(default=False)
-    is_multimodal: bool = field(default=False)
     image_crop_resolution: Optional[int] = field(default=None)
-
-
-if __name__ == "__main__":
-    print(compose("config"))
 
 
 if __name__ == "__main__":

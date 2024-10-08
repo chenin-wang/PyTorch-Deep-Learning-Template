@@ -14,3 +14,6 @@ timm
 wandb
 tensorboard
 torchmetrics
+onnx
+onnxruntime
+onnxsim

@@ -61,4 +61,5 @@ class TestColoredLogger(unittest.TestCase):
             os.unlink(temp_log_path)
 
 if __name__ == '__main__':
+    # python -m unittest test.test_log.py
     unittest.main()

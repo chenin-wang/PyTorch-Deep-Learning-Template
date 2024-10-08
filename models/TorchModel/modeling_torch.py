@@ -3,11 +3,11 @@ import torch
 import torch.nn as nn
 from .utils import *
 from ...loggers.logging_colors import get_logger
+from transformers.modeling_utils import PreTrainedModel
 
 logger = get_logger()
 
-
-class CustomTorchModel(nn.Module):
+class CustomTorchModel(PreTrainedModel):
     def __init__(
         self,
         input_dim: int,
