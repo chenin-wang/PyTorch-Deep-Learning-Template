@@ -1,4 +1,3 @@
-numpy
 torch
 torchaudio
 torchvision
@@ -14,6 +13,5 @@ timm
 wandb
 tensorboard
 torchmetrics
-onnx
-onnxruntime
 onnxsim
+optimum

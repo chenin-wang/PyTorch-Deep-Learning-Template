@@ -1,11 +1,9 @@
-"""sample dataset."""
-
-import csv
+"""sample dataset.
+https://huggingface.co/docs/datasets/v3.0.0/en/dataset_script
+"""
 import json
 import os
-
 import datasets
-
 
 _CITATION = """\
 @InProceedings{dataset:dataset,
@@ -23,7 +21,7 @@ This is a sample dataset.
 """
 
 _HOMEPAGE = ""
-_LICENSE = ""
+_LICENSE = "MIT"
 _URLS = {
     "first_domain": "E:\code_learning\PyTorch-Deep-Learning-Template\dataset\hf_dataset_sample",
 }

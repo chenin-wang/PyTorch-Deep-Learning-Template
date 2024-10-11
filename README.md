@@ -11,6 +11,8 @@ A clean and modular template to kickstart your next deep learning project 🚀�
 - **Logging**: Utilizes Python's [logging](https://docs.python.org/3/library/logging.html) module 
 - **Experiment Tracking**: Integrates [Weights & Biases](https://www.wandb.ai) for comprehensive experiment monitoring
 - **Metrics**: Uses [torchmetrics](https://github.com/Lightning-AI/metrics) for efficient metric computation and [evaluate](https://github.com/huggingface/evaluate) for multi-metric model evaluation
+- **optimization**: [Optimum](https://github.com/huggingface/optimum/tree/main) is an extension of 🤗 Transformers and Diffusers, providing a set of optimization tools enabling maximum efficiency to train and run models on targeted hardware, while keeping things easy to use.
+
 - **Playground**: Jupyter notebook for quick experimentation and prototyping
 
 ## Key Components
