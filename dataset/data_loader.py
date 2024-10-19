@@ -1,45 +1,51 @@
+"""Data loading utilities for PyTorch training."""
+
 import torch
 from torch.utils.data import DataLoader, random_split, DistributedSampler
-from .Dataset import CustomTorchDataset
+from .dataset_builder import CustomTorchDataset
+from typing import Dict, List, Optional, Union, Callable
 from ..loggers.logging_colors import get_logger
 
 logger = get_logger()
 
 
 def get_dataloaders(
-    data_dir,
-    transform=None,
-    split=(0.8, 0.1, 0.1),
-    batch_size=32,
-    num_workers=4,
-    distributed=False,
-    seed=42,
-    *args,
+    dataset: Union[torch.utils.data.Dataset, CustomTorchDataset],
+    split: tuple = (0.8, 0.1, 0.1),
+    batch_size: int = 32,
+    num_workers: int = 4,
+    distributed: bool = False,
+    seed: int = 42,
     **kwargs,
 ):
-    """
-    Returns train, val and test dataloaders for various training scenarios.
+    """Create and return PyTorch DataLoaders for train, validation, and test sets.
+
+    This function handles dataset splitting, DistributedSampler setup (if enabled),
+    and DataLoader creation for efficient data loading during training.
 
     Args:
-        train_dir (str): Path to training data directory
-        transform (callable, optional): A function/transform to apply to the data
-        split (tuple): Ratios for train, validation and test splits
-        batch_size (int): Batch size for dataloaders
-        num_workers (int): Number of worker processes for data loading
-        distributed (bool): Whether to use distributed training
+        dataset (torch.utils.data.Dataset): The full dataset to be split.
+        split (tuple, optional): Dataset split ratios (train, val, test). Defaults to (0.8, 0.1, 0.1).
+        batch_size (int, optional): Batch size for the DataLoaders. Defaults to 32.
+        num_workers (int, optional): Number of worker processes for data loading. Defaults to 4.
+        distributed (bool, optional):  Whether to use distributed training. Defaults to False.
+        seed (int, optional): Random seed for reproducible splitting. Defaults to 42.
+        **kwargs: Additional keyword arguments to pass to the DataLoader.
 
     Returns:
-        tuple: train_dataloader, val_dataloader, test_dataloader
+        tuple: A tuple of DataLoaders (train_loader, val_loader, test_loader).
+               If `dataset` is None, returns (None, None, None).
     """
-    full_dataset = CustomTorchDataset(data_dir, transform=transform)
 
-    train_size, val_size = (
-        int(split[0] * len(full_dataset)),
-        int(split[1] * len(full_dataset)),
-    )
-    test_size = len(full_dataset) - train_size - val_size
+    if dataset is None:
+        return None, None, None
+
+    train_size = int(split[0] * len(dataset))
+    val_size = int(split[1] * len(dataset))
+    test_size = len(dataset) - train_size - val_size
+
     train_dataset, val_dataset, test_dataset = random_split(
-        full_dataset,
+        dataset,
         [train_size, val_size, test_size],
         generator=torch.Generator().manual_seed(seed),
     )
@@ -48,34 +54,33 @@ def get_dataloaders(
         f"Dataset split: Train={len(train_dataset)}, Validation={len(val_dataset)}, Test={len(test_dataset)}"
     )
 
-    samplers = {
-        "train": DistributedSampler(train_dataset) if distributed else None,
-        "val": DistributedSampler(val_dataset, shuffle=False) if distributed else None,
-        "test": DistributedSampler(test_dataset, shuffle=False)
-        if distributed
-        else None,
-    }
-
-    dataloader_args = {
-        "batch_size": batch_size,
-        "num_workers": num_workers,
-        "pin_memory": True,
-        **kwargs,
-    }
+    # Create samplers, ensuring correct behavior with DistributedSampler
+    samplers = {}
+    for split_name, split_dataset in zip(
+        ["train", "val", "test"], [train_dataset, val_dataset, test_dataset]
+    ):
+        if distributed:
+            # Use DistributedSampler for distributed training
+            # Important: Set shuffle=False for validation and test loaders
+            samplers[split_name] = DistributedSampler(
+                split_dataset, shuffle=(split_name == "train")
+            )
+        else:
+            samplers[split_name] = None
 
     dataloaders = {
-        "train": DataLoader(
-            train_dataset,
-            shuffle=(samplers["train"] is None),
-            sampler=samplers["train"],
-            **dataloader_args,
-        ),
-        "val": DataLoader(
-            val_dataset, shuffle=False, sampler=samplers["val"], **dataloader_args
-        ),
-        "test": DataLoader(
-            test_dataset, shuffle=False, sampler=samplers["test"], **dataloader_args
-        ),
+        split_name: DataLoader(
+            split_dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            pin_memory=True,
+            shuffle=(samplers[split_name] is None),  # Important: shuffle if no sampler
+            sampler=samplers[split_name],
+            **kwargs,
+        )
+        for split_name, split_dataset in zip(
+            ["train", "val", "test"], [train_dataset, val_dataset, test_dataset]
+        )
     }
 
     logger.info(

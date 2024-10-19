@@ -1,5 +1,9 @@
+"""Input/output utility functions."""
+
 from os import PathLike
 from pathlib import Path
+from typing import Sequence, Union
+
 import yaml
 
 __all__ = [
@@ -12,69 +16,105 @@ __all__ = [
 
 # TEXT
 # ------------------------------------------------------------------------------
-def readlines(file: PathLike, /, encoding=None) -> list[str]:
-    """Read file as a list of strings."""
-    with open(file, encoding=encoding) as f:
+def readlines(file_path: Union[str, Path], encoding: str = None) -> list[str]:
+    """Read a file into a list of strings, one per line.
+
+    Args:
+        file_path (Union[str, Path]): The path to the file.
+        encoding (str, optional): The file encoding. Defaults to None.
+
+    Returns:
+        list[str]: A list of strings, one per line in the file.
+    """
+    with open(file_path, "r", encoding=encoding) as f:
         return f.read().splitlines()
 
 
-# ------------------------------------------------------------------------------
-
-
-# YAML LOADING
+# YAML
 # ------------------------------------------------------------------------------
 def write_yaml(
-    file: PathLike, data: dict, mkdir: bool = False, sort_keys: bool = False
+    file_path: Union[str, Path],
+    data: dict,
+    create_dirs: bool = False,
+    sort_keys: bool = False,
 ) -> None:
-    """Write data to a yaml file."""
-    file = Path(file).with_suffix(".yaml")
-    if mkdir:
-        file.parent.mkdir(parents=True, exist_ok=True)
+    """Write data to a YAML file.
 
-    with open(file, "w") as f:
+    Args:
+        file_path (Union[str, Path]): Path to the YAML file.
+        data (dict): The data to write.
+        create_dirs (bool, optional): Create parent directories if they don't exist. Defaults to False.
+        sort_keys (bool, optional): Sort keys alphabetically in the output. Defaults to False.
+    """
+    file_path = Path(file_path).with_suffix(".yaml")
+    if create_dirs:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(file_path, "w") as f:
         yaml.dump(data, f, sort_keys=sort_keys)
 
 
-def load_yaml(file: PathLike) -> dict:
-    """Load a single yaml file."""
-    with open(file) as f:
-        data = yaml.load(f, Loader=yaml.FullLoader)
-    return data
+def load_yaml(file_path: Union[str, Path]) -> dict:
+    """Load data from a YAML file.
 
+    Args:
+        file_path (Union[str, Path]): Path to the YAML file.
 
-def load_merge_yaml(*files: PathLike) -> dict:
-    """Load a list of YAML cfg and recursively merge into a single config.
-
-    Following dictionary merging rules, the first file is the "base" config, which gets updated by the second file.
-    We chain this rule for however many cfg we have, i.e. ((((1 <- 2) <- 3) <- 4) ... <- n)
-
-    :param files: (Sequence[PathLike]) List of YAML config files to load, from "oldest" to "newest".
-    :return: (dict) The merged config from all given files.
+    Returns:
+        dict: The loaded data.
     """
-    data = [load_yaml(file) for file in files]
-    old = data.pop(0)  # First config becomes the default which will get overwritten
-    for new in data:
-        old = _merge_yaml(old, new)  # Iteratively override with new cfg
-
-    return old
+    with open(file_path, "r") as f:
+        return yaml.safe_load(f)
 
 
-def _merge_yaml(old: dict, new: dict) -> dict:
-    """Recursively merge two YAML cfg.
-    Dictionaries are recursively merged. All other types simply update the current value.
+def load_merge_yaml(*file_paths: Union[str, Path]) -> dict:
+    """Load and merge multiple YAML files.
 
-    NOTE: This means that a "list of dicts" will simply be updated to whatever the new value is,
-    not appended to or recursively checked!
+    This function loads YAML files in the given order, merging their
+    contents recursively. Later files override earlier ones.
 
-    :param old: (dict) Base dictionary containing default keys.
-    :param new: (dict) New dictionary containing keys to overwrite in `old`.
-    :return: (dict) The merge config.
+    Args:
+        *file_paths (Union[str, Path]): Paths to the YAML files to load.
+
+    Returns:
+        dict: The merged configuration.
+
+    Example:
+        ```python
+        merged_config = load_merge_yaml("base.yaml", "overrides.yaml")
+        ```
     """
-    d = old.copy()  # Just in case...
-    for k, v in new.items():
-        # If `v` is an existing dict, merge recursively. Otherwise replace/add `old`.
-        d[k] = _merge_yaml(d[k], v) if k in d and isinstance(v, dict) else v
-    return d
+    merged_data = {}
+    for file_path in file_paths:
+        data = load_yaml(file_path)
+        merged_data = _merge_dicts(merged_data, data)
+    return merged_data
+
+
+def _merge_dicts(old_dict: dict, new_dict: dict) -> dict:
+    """Recursively merge two dictionaries.
+
+    This is a helper function for `load_merge_yaml`. It merges the
+    contents of two dictionaries recursively, with values from the
+    `new_dict` taking precedence over those in `old_dict`.
+
+    Args:
+        old_dict (dict): The base dictionary.
+        new_dict (dict): The dictionary to merge into the base.
+
+    Returns:
+        dict: The merged dictionary.
+    """
+    for key, value in new_dict.items():
+        if (
+            isinstance(value, dict)
+            and key in old_dict
+            and isinstance(old_dict[key], dict)
+        ):
+            old_dict[key] = _merge_dicts(old_dict[key], value)
+        else:
+            old_dict[key] = value
+    return old_dict
 
 
 # ------------------------------------------------------------------------------

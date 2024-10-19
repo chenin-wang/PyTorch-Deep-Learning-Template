@@ -1,14 +1,10 @@
-"""
-loading other dataset modalities, take a look at the load audio dataset guide, 
-the load image dataset guide, or the load text dataset guide.
-https://huggingface.co/docs/datasets/loading
+"""Dataset loading and processing utilities."""
 
-"""
-
-import torch
 import os
+from typing import Dict, List, Optional, Union, Callable
 import json
-from typing import Dict, List, Optional, Union
+import torch
+from torch.utils.data import Dataset
 import datasets
 from datasets import (
     load_dataset,
@@ -21,108 +17,170 @@ from datasets import (
     IterableDatasetDict,
     IterableDataset,
 )
-from dataclasses import dataclass, field
-from .transformations.transforms import train_transforms
+from .transformations.transforms import (
+    train_transforms,
+)  # Assuming this is for image transformations
 from ..loggers.logging_colors import get_logger
 
 logger = get_logger()
 
 
-class CustomTorchDataset(torch.utils.data.Dataset):
-    def __init__(self, data: List[Dict], transforms=None):
+class CustomTorchDataset(Dataset):
+    """Custom PyTorch Dataset class for loading image data.
+
+    This class assumes your data is organized in a way that each sample
+    can be accessed by an index.
+    """
+
+    def __init__(self, data: List[Dict], transforms: Optional[Callable] = None):
+        """
+        Initializes the CustomTorchDataset.
+
+        Args:
+            data (List[Dict]): A list of dictionaries, where each dictionary represents a data sample
+                               and has at least 'image' and 'label' keys.
+            transforms (Optional[Callable], optional): A function/transform to apply to the data.
+                                                        Defaults to None.
+        """
         self.data = data
         self.transforms = transforms
         logger.info(f"CustomTorchDataset initialized with {len(self.data)} samples")
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Returns the total number of samples."""
         return len(self.data)
 
-    def __getitem__(self, idx):
-        item = self.data[idx]
+    def __getitem__(self, idx: int) -> Dict:
+        """Returns the sample at the given index."""
+        item = self.data[idx].copy()  # Make a copy to avoid modifying the original data
         if self.transforms:
             item = self.transforms(item)
         return item
 
 
-class CustomHuggingFaceDataset(datasets.DatasetBuilder):
-    def __init__(self, path: str = "rotten_tomatoes", transforms=None):
-        self.path = path
-        self.dataset_builder = load_dataset_builder(self.path)
+class CustomHuggingFaceDataset(object):
+    """Wrapper class for loading and processing Hugging Face Datasets."""
+
+    def __init__(
+        self,
+        dataset_name: str,
+        dataset_script_path: Optional[str] = None,
+        transforms: Optional[Callable] = None,
+    ):
+        """
+        Initializes the CustomHuggingFaceDataset.
+
+        Args:
+            dataset_name (str):
+                * For standard Hugging Face datasets: Name of the dataset (e.g., 'cifar10', 'imagenet').
+                * For custom datasets: The name you registered your dataset under.
+            dataset_script_path (Optional[str], optional):
+                Path to your custom dataset script if using a custom dataset.
+                Defaults to None.
+            transforms (Optional[Callable], optional):
+                A function/transform to apply to the data. Defaults to None.
+        """
+        self.dataset_name = dataset_name
+        self.dataset_script_path = dataset_script_path
         self.transforms = transforms
-        logger.info(f"CustomHuggingFaceDataset initialized with path: {self.path}")
 
-    def info(self) -> None:
-        """Get general information about the dataset."""
-        logger.info(f"Dataset: {self.path}")
-        logger.info(f"Description: {self.dataset_builder.info.description}")
-        logger.info(f"Features: {self.dataset_builder.info.features}")
-        logger.info(f"Splits: {get_dataset_split_names(self.path)}")
+        # Determine if we're loading a custom dataset
+        self.is_custom_dataset = bool(self.dataset_script_path)
 
-    def load(
-        self, split: str = "train", batched: bool = False
-    ) -> Union[DatasetDict, datasets.Dataset, IterableDatasetDict, IterableDataset]:
-        """Load a specific split of the dataset."""
-        dataset = load_dataset(self.path, trust_remote_code=True, num_proc=8)
-        # 加载自定义数据集
-        dataset = load_dataset(
-            "dataset/hf_dataset_sample/custom_hf_dataset.py",
-            split="train",
-            trust_remote_code=True,
-            num_proc=8,
+        if self.is_custom_dataset:
+            # Register the custom dataset if a script path is provided
+            datasets.load_dataset(
+                self.dataset_script_path, name="default", trust_remote_code=True
+            )
+
+        logger.info(
+            f"CustomHuggingFaceDataset initialized with dataset: {self.dataset_name}"
+            f" (Custom: {self.is_custom_dataset})"
         )
 
-        # 打印数据集基本信息
-        print(dataset.info)
+    def info(self) -> None:
+        """Print information about the dataset."""
+        if self.is_custom_dataset:
+            logger.info(f"Custom dataset loaded from: {self.dataset_script_path}")
+            # Add logic here to fetch and print info for your custom dataset
+            # You might need to access information differently than for standard HF datasets
+        else:
+            logger.info(f"Dataset: {self.dataset_name}")
+            logger.info(f"Description: {self.dataset_builder.info.description}")
+            logger.info(f"Features: {self.dataset_builder.info.features}")
+            logger.info(f"Splits: {get_dataset_split_names(self.dataset_name)}")
+
+    def load(
+        self,
+        split: str = "train",
+        cache_dir: Optional[str] = None,
+        streaming: bool = False,
+    ) -> Union[DatasetDict, datasets.Dataset, IterableDatasetDict, IterableDataset]:
+        """Load the dataset split.
+
+        This method handles loading both standard Hugging Face datasets and custom
+        datasets based on the `self.is_custom_dataset` flag.
+
+        Args:
+            split (str, optional): The dataset split to load ('train', 'validation', 'test').
+                                    Defaults to 'train'.
+            cache_dir (Optional[str], optional): Directory to cache the downloaded dataset.
+                                                Defaults to None.
+            streaming (bool, optional): Whether to load the dataset in streaming mode.
+                                        Defaults to False.
+
+        Returns:
+            Union[DatasetDict, datasets.Dataset, IterableDatasetDict, IterableDataset]:
+                The loaded dataset split.
+        """
+        load_kwargs = (
+            {"cache_dir": cache_dir, "streaming": streaming}
+            if streaming
+            else {"cache_dir": cache_dir}
+        )
+
+        if self.is_custom_dataset:
+            # Load custom dataset
+            dataset = load_dataset(
+                self.dataset_name, trust_remote_code=True, **load_kwargs
+            )
+        else:
+            # Load standard Hugging Face dataset
+            dataset = load_dataset(self.dataset_name, **load_kwargs)
 
         logger.info(f"Loaded {split} split with {len(dataset[split])} samples")
+
         if self.transforms:
-            dataset[split] = dataset[split].map(
-                self.transforms, num_proc=4, batched=batched
-            )
+            # Assuming `self.transforms` is a function that can be mapped over the dataset
+            dataset = dataset.map(self.transforms, num_proc=4, batched=True)
+
         return dataset[split]
 
     @staticmethod
-    def create_dataset(
+    def create_from_paths(
         image_paths: List[str],
         label_paths: List[str],
-        transforms=None,
-        batched: bool = False,
+        features: Optional[Features] = None,
+        transforms: Optional[Callable] = None,
     ) -> datasets.Dataset:
+        """Create a Hugging Face Dataset from lists of image and label paths.
+
+        Args:
+            image_paths (List[str]): List of paths to the images.
+            label_paths (List[str]): List of paths to the labels.
+            features (Optional[Features], optional): Dataset Features. If None, infer from data.
+                                                    Defaults to None.
+            transforms (Optional[Callable], optional): A function/transform to apply to the data.
+                                                        Defaults to None.
+
+        Returns:
+            datasets.Dataset: The created Hugging Face Dataset.
         """
-        Create a dataset from image and label paths.
-        other type ref https://huggingface.co/docs/datasets/image_dataset
-        """
-        dataset = datasets.Dataset.from_dict(
-            {"image": sorted(image_paths), "label": sorted(label_paths)}
-        )
-        dataset = dataset.cast_column("image", Image()).cast_column("label", Image())
-        logger.info(f"Created image dataset with {len(dataset)} samples")
+        data_dict = {"image": sorted(image_paths), "label": sorted(label_paths)}
+        dataset = datasets.Dataset.from_dict(data_dict, features=features)
+
         if transforms:
-            dataset = dataset.map(transforms, num_proc=4, batched=batched)
+            dataset = dataset.map(transforms, num_proc=4, batched=True)
+
+        logger.info(f"Created image dataset with {len(dataset)} samples")
         return dataset
-
-
-if __name__ == "__main__":
-    # Example usage for CustomTorchDataset
-    data = [
-        {"image": "path/to/image1.jpg", "label": 0},
-        {"image": "path/to/image2.jpg", "label": 1},
-    ]
-    torch_dataset = CustomTorchDataset(data, transforms=train_transforms)
-    logger.info(f"CustomTorchDataset sample: {torch_dataset[0]}")
-
-    # Example usage for CustomHuggingFaceDataset
-    hf_dataset = CustomHuggingFaceDataset()
-    hf_dataset.info()
-    train_data = hf_dataset.load("train")
-    logger.info(f"CustomHuggingFaceDataset sample: {train_data[0]}")
-
-    # Example for image dataset creation
-    image_dataset = CustomHuggingFaceDataset.create_dataset(
-        image_paths=["path/to/train_image_1.jpg", "path/to/train_image_2.jpg"],
-        label_paths=["path/to/train_label_1.png", "path/to/train_label_2.png"],
-        transforms=train_transforms,
-    )
-    logger.info(f"Image dataset sample: {image_dataset[0]}")
-
-    logger.info("Dataset creation and transformation completed")

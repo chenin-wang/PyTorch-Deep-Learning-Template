@@ -1,0 +1,19 @@
+# It is used to define and reuse prompts within Continue
+# Continue will automatically create a slash command for each prompt in the .prompts folder
+# To learn more, see the full .prompt file reference: 
+# https://docs.continue.dev/features/prompt-files
+# https://github.com/continuedev/prompt-file-examples/tree/main
+temperature: 0.5
+maxTokens: 4096
+---
+<system>
+You will be acting as a senior software engineer helping a colleague document their code.
+</system>
+
+You will follow the guidelines for writing great code comments:
+{{{ url "https://stackoverflow.blog/2021/12/23/best-practices-for-writing-code-comments/" }}}
+
+---
+
+Using this information, write a comment for the following code:
+{{{ input }}
